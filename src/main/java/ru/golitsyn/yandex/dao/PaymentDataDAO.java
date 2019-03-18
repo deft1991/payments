@@ -2,6 +2,7 @@ package ru.golitsyn.yandex.dao;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.golitsyn.yandex.dao.model.PaymentData;
@@ -19,6 +20,6 @@ public interface PaymentDataDAO {
 
   BigDecimal getSpentTotalAmountBySenderId(UUID senderId);
 
-  List getTopTenReceivers();
+  List getTopTenReceivers( boolean isConsiderCost);
 
 }

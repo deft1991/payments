@@ -52,13 +52,13 @@ public class PaymentDataServiceTest {
     PaymentData paymentData1 = (PaymentData) testJdbcTemplate.queryForObject(
         sql, new Object[]{"000002f4-48e2-11e9-8646-d663bd873d93"}, new PaymentDataMapper());
     assert paymentData1 != null;
+    Assert.assertEquals("000002f4-48e2-11e9-8646-d663bd873d93", paymentData1.getId().toString());
     Assert
-        .assertTrue("000002f4-48e2-11e9-8646-d663bd873d93".equals(paymentData1.getId().toString()));
-    Assert.assertTrue(
-        "000002f4-48e2-11e9-8646-d663bd873d93".equals(paymentData1.getSenderId().toString()));
-    Assert.assertTrue(
-        "000002f4-48e2-11e9-8646-d663bd873d93".equals(paymentData1.getReceiverId().toString()));
-    Assert.assertTrue(1L == (paymentData1.getAmount()));
+        .assertEquals("000002f4-48e2-11e9-8646-d663bd873d93",
+            paymentData1.getSenderId().toString());
+    Assert.assertEquals("000002f4-48e2-11e9-8646-d663bd873d93",
+        paymentData1.getReceiverId().toString());
+    Assert.assertEquals(1L, (long) (paymentData1.getAmount()));
   }
 
   /**
@@ -75,7 +75,7 @@ public class PaymentDataServiceTest {
    * тестывыми профилями
    */
   @Test
-  public void getTopTenRecievers() {
+  public void getTopTenReceivers() {
 
   }
 }

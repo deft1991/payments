@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
@@ -11,6 +12,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
+import org.springframework.util.ObjectUtils;
 import ru.golitsyn.yandex.dao.PaymentDataDAO;
 import ru.golitsyn.yandex.dao.model.PaymentData;
 
@@ -20,9 +22,12 @@ import ru.golitsyn.yandex.dao.model.PaymentData;
 public class JdbcTemplatePaymentDaoImpl implements PaymentDataDAO {
 
   private static final String QUERY_SAVE = "insert into payment.payment_data (id, sender_id, receiver_id, amount) VALUES (?,?,?,?)";
-  private static final String SELECT_TOP_TEN_BY_RECEIVER = "SELECT * FROM top_ten_amount_receiver()";
+  private static final String SELECT_TOP_TEN_RECEIVER = "SELECT * FROM top_ten_amount_receiver()";
+  private static final String SELECT_TOP_TEN_RECEIVER_WITH_COSTS = "SELECT * FROM amount_receivers()";
   private static final String TOTAL_AMOUNT_BY_SENDER_ID = "total_amount_by_sender_id";
   private static final String FIELD_SENDER_ID = "sender_id";
+  private static final String RECEIVER_ID = "receiver_id";
+  private static final String AMOUNT = "amount";
 
   private JdbcTemplate jdbcTemplate;
 
@@ -91,7 +96,6 @@ public class JdbcTemplatePaymentDaoImpl implements PaymentDataDAO {
         .withFunctionName(TOTAL_AMOUNT_BY_SENDER_ID);
 
     SqlParameterSource in = new MapSqlParameterSource().addValue(FIELD_SENDER_ID, senderId);
-
     return jdbcCall.executeFunction(BigDecimal.class, in);
   }
 
@@ -106,9 +110,57 @@ public class JdbcTemplatePaymentDaoImpl implements PaymentDataDAO {
    * specify the type to use.
    */
   @Override
-  public List getTopTenReceivers() {
+  public List getTopTenReceivers(boolean isConsiderCost) {
+    if (isConsiderCost) {
+      return getTopTenReceiversWithCosts();
+    } else {
+      return getTopTenReceiversWithoutCosts();
+    }
+  }
+
+  /**
+   * Топ 10 получателей с учиетом отправленных средств
+   *
+   * Не успел к сожалению найти способ, что бы учитывать затраты непосредственно в БД, но я уверен
+   * он есть
+   *
+   * @return пары
+   */
+  private List getTopTenReceiversWithCosts() {
+    List<Map<String, Object>> receivers = jdbcTemplate
+        .queryForList(SELECT_TOP_TEN_RECEIVER_WITH_COSTS);
+    substractCosts(receivers);
+    sortByAmount(receivers);
+    return receivers.size() > 10 ? receivers.subList(0, 10) : receivers;
+  }
+
+  private void substractCosts(List<Map<String, Object>> receivers) {
+    for (Map<String, Object> receiver : receivers) {
+      BigDecimal spentTotalAmount = getSpentTotalAmountBySenderId(
+          UUID.fromString(receiver.get(RECEIVER_ID).toString()));
+      if (!ObjectUtils.isEmpty(spentTotalAmount)) {
+        BigDecimal rez = new BigDecimal(receiver.get(AMOUNT).toString())
+            .subtract(spentTotalAmount);
+        receiver.put(AMOUNT, rez);
+      }
+    }
+  }
+
+  private void sortByAmount(List<Map<String, Object>> receivers) {
+    receivers.sort((o1, o2) -> {
+      BigDecimal values1 = (BigDecimal) o1.get(AMOUNT);
+      BigDecimal values2 = (BigDecimal) o2.get(AMOUNT);
+      if (!ObjectUtils.isEmpty(values1) && !ObjectUtils.isEmpty(values2)) {
+        return values2.compareTo(values1);
+      } else {
+        return 0;
+      }
+    });
+  }
+
+  private List getTopTenReceiversWithoutCosts() {
     return jdbcTemplate
-        .queryForList(SELECT_TOP_TEN_BY_RECEIVER);
+        .queryForList(SELECT_TOP_TEN_RECEIVER);
   }
 
 }
