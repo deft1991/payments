@@ -1,24 +1,24 @@
 package ru.golitsyn.yandex.dao;
 
-import ru.golitsyn.yandex.dao.model.PaymentData;
-
-import javax.sql.DataSource;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.jdbc.core.JdbcTemplate;
+import ru.golitsyn.yandex.dao.model.PaymentData;
 
 /**
  * Created by Sergey Golitsyn (deft) on 17.03.2019
  */
 public interface PaymentDataDAO {
-  public void setDataSource(DataSource dataSource);
 
-  public boolean insertPaymentData(List<PaymentData> paymentDataList);
+  void setJdbcTemplate(JdbcTemplate jdbcTemplate);
 
-  public boolean insertPaymentData(PaymentData paymentDataList);
+  void insertPaymentData(List<PaymentData> paymentDataList);
 
-  public BigDecimal getSpentTotalAmountBySenderId(UUID senderId);
+  void insertPaymentData(PaymentData paymentDataList, JdbcTemplate jdbcTemplate);
 
-  public List getTopTenReceivers();
+  BigDecimal getSpentTotalAmountBySenderId(UUID senderId);
+
+  List getTopTenReceivers();
 
 }

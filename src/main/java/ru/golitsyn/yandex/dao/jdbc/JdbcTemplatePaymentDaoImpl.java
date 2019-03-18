@@ -4,9 +4,8 @@ import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
-import javax.sql.DataSource;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
@@ -14,7 +13,6 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.simple.SimpleJdbcCall;
 import ru.golitsyn.yandex.dao.PaymentDataDAO;
 import ru.golitsyn.yandex.dao.model.PaymentData;
-import ru.golitsyn.yandex.dao.util.TopReceiverMapper;
 
 /**
  * Created by Sergey Golitsyn (deft) on 17.03.2019
@@ -22,18 +20,25 @@ import ru.golitsyn.yandex.dao.util.TopReceiverMapper;
 public class JdbcTemplatePaymentDaoImpl implements PaymentDataDAO {
 
   private static final String QUERY_SAVE = "insert into payment.payment_data (id, sender_id, receiver_id, amount) VALUES (?,?,?,?)";
+  private static final String SELECT_TOP_TEN_BY_RECEIVER = "SELECT * FROM top_ten_amount_receiver()";
+  private static final String TOTAL_AMOUNT_BY_SENDER_ID = "total_amount_by_sender_id";
+  private static final String FIELD_SENDER_ID = "sender_id";
 
+  //  private DataSource dataSource;
   private JdbcTemplate jdbcTemplate;
-  private DataSource dataSource;
 
   @Override
-  public void setDataSource(DataSource dataSource) {
-    this.dataSource = dataSource;
-    this.jdbcTemplate = new JdbcTemplate(dataSource);
+  public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
+    this.jdbcTemplate = jdbcTemplate;
   }
 
+  /**
+   * Метод для записи данных в бд, без разделения по разным базам
+   *
+   * @param paymentDataList - лист данных
+   */
   @Override
-  public boolean insertPaymentData(List<PaymentData> paymentDataList) {
+  public void insertPaymentData(List<PaymentData> paymentDataList) {
     final int batchSize = 500;
 
     for (int j = 0; j < paymentDataList.size(); j += batchSize) {
@@ -60,32 +65,41 @@ public class JdbcTemplatePaymentDaoImpl implements PaymentDataDAO {
           });
 
     }
-    return true;
   }
 
+  /**
+   * Инсерт записи в бд
+   */
   @Override
-  public boolean insertPaymentData(PaymentData paymentDataList) {
+  public void insertPaymentData(PaymentData paymentData, JdbcTemplate jdbcTemplate) {
     jdbcTemplate.update(
         QUERY_SAVE,
-        paymentDataList.getId()
-        , paymentDataList.getSenderId()
-        , paymentDataList.getReceiverId()
-        , paymentDataList.getAmount()
+        paymentData.getId() == null ? UUID.randomUUID() : paymentData.getId()
+        , paymentData.getSenderId()
+        , paymentData.getReceiverId()
+        , paymentData.getAmount()
     );
-    return true;
   }
 
+  /**
+   * @param senderId - id отправителя
+   * @return общая сумма потраченных средств
+   */
   @Override
   public BigDecimal getSpentTotalAmountBySenderId(UUID senderId) {
     SimpleJdbcCall jdbcCall = new
-        SimpleJdbcCall(dataSource).withFunctionName("total_amount_by_sender_id");
+        SimpleJdbcCall(Objects.requireNonNull(jdbcTemplate.getDataSource()))
+        .withFunctionName(TOTAL_AMOUNT_BY_SENDER_ID);
 
-    SqlParameterSource in = new MapSqlParameterSource().addValue("sender_id", senderId);
+    SqlParameterSource in = new MapSqlParameterSource().addValue(FIELD_SENDER_ID, senderId);
 
     return jdbcCall.executeFunction(BigDecimal.class, in);
   }
 
   /**
+   * Получение топ-10 получателей по сумме заработаных средств (не учитываю то что получатель
+   * потратил) todo необходимо добавить функцию учитывающую потраченные средства
+   *
    * Получаю и маплю таким способом, потому что на данный момент не нашел как обойти ошибку
    *
    * org.postgresql.util.PSQLException: Can't infer the SQL type to use for an instance of
@@ -94,10 +108,8 @@ public class JdbcTemplatePaymentDaoImpl implements PaymentDataDAO {
    */
   @Override
   public List getTopTenReceivers() {
-
-    List<Map<String, Object>> maps = jdbcTemplate
-        .queryForList("SELECT * FROM top_ten_amount_receiver()");
-    return maps;
+    return jdbcTemplate
+        .queryForList(SELECT_TOP_TEN_BY_RECEIVER);
   }
 
 }

@@ -1,5 +1,8 @@
 package ru.golitsyn.yandex.controllers;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,10 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import ru.golitsyn.yandex.dao.model.PaymentData;
 import ru.golitsyn.yandex.services.PaymentDataService;
 
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
-
 /**
  * Created by Sergey Golitsyn (deft) on 17.03.2019
  */
@@ -21,21 +20,25 @@ import java.util.UUID;
 @RequestMapping("payment-data")
 public class PaymentDataController {
 
+  private final PaymentDataService paymentDataService;
+
   @Autowired
-  PaymentDataService paymentDataService;
+  public PaymentDataController(PaymentDataService paymentDataService) {
+    this.paymentDataService = paymentDataService;
+  }
 
   @PostMapping
   public boolean insertPaymentData(@RequestBody List<PaymentData> paymentDataList) {
-	return paymentDataService.insertPaymentData(paymentDataList);
+    return paymentDataService.insertPaymentData(paymentDataList);
   }
 
   @GetMapping("/top-amount/{senderId}")
   public BigDecimal getSpentTotalAmountBySenderId(@PathVariable("senderId") UUID senderId) {
-	return paymentDataService.getSpentTotalAmountBySenderId(senderId);
+    return paymentDataService.getSpentTotalAmountBySenderId(senderId);
   }
 
-  @GetMapping("top")
+  @GetMapping("top-receivers")
   public List getTopTenRecievers() {
-	return paymentDataService.getTopTenRecievers();
+    return paymentDataService.getTopTenRecievers();
   }
 }
