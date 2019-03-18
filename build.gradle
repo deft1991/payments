@@ -35,6 +35,7 @@ dependencies {
 
     compile group: 'org.springframework', name: 'spring-jdbc', version: '5.1.5.RELEASE'
     compile group: 'org.springframework', name: 'spring-context', version: '5.1.5.RELEASE'
+    testCompile group: 'com.h2database', name: 'h2', version: '1.4.199'
 
 
 

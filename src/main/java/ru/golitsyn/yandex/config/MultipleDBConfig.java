@@ -8,6 +8,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 
 @Configuration
 public class MultipleDBConfig {
@@ -46,6 +48,20 @@ public class MultipleDBConfig {
 
   @Bean(name = "threeJdbcTemplate")
   public JdbcTemplate threeJdbcTemplate(@Qualifier("threeDb")
+      DataSource dsPostgres) {
+    return new JdbcTemplate(dsPostgres);
+  }
+
+  @Bean(name = "testDb")
+  public DataSource h2DataSource() {
+    return new EmbeddedDatabaseBuilder()
+        .setType(EmbeddedDatabaseType.H2)
+        .addScript("create_payment_data.sql")
+        .build();
+  }
+
+  @Bean(name = "testJdbcTemplate")
+  public JdbcTemplate testJdbcTemplate(@Qualifier("testDb")
       DataSource dsPostgres) {
     return new JdbcTemplate(dsPostgres);
   }

@@ -24,7 +24,6 @@ public class JdbcTemplatePaymentDaoImpl implements PaymentDataDAO {
   private static final String TOTAL_AMOUNT_BY_SENDER_ID = "total_amount_by_sender_id";
   private static final String FIELD_SENDER_ID = "sender_id";
 
-  //  private DataSource dataSource;
   private JdbcTemplate jdbcTemplate;
 
   @Override
