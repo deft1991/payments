@@ -1,0 +1,21 @@
+server:
+  port: 8080
+spring:
+  flyway:
+    locations: classpath:db/migration
+    enabled: true
+    baseline-on-migrate: true
+    schemas: payment
+  onedb:
+    jdbcUrl: jdbc:postgresql://localhost:5432/one_db
+    username: root
+    password: root
+#    driverClassName: org.postgresql.Driver
+  twodb:
+    jdbcUrl: jdbc:postgresql://localhost:5432/two_db
+    username: root
+    password: root
+  threedb:
+    jdbcUrl: jdbc:postgresql://localhost:5432/three_db
+    username: root
+    password: root
